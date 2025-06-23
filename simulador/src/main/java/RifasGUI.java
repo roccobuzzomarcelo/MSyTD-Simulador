@@ -23,6 +23,7 @@ import org.jfree.chart.ChartPanel;
 import org.jfree.chart.ChartUtils;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.plot.CategoryPlot;
+import org.jfree.chart.plot.DatasetRenderingOrder;
 import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.renderer.category.BarRenderer;
 import org.jfree.data.category.DefaultCategoryDataset;
@@ -66,15 +67,18 @@ public class RifasGUI extends JFrame {
         precioBField = new JTextField("1900", 6);
         repeticionesField = new JTextField("0", 4);
 
-        infoEscenariosArea = new JTextArea(3, 50);
+        infoEscenariosArea = new JTextArea(4, 50);
         infoEscenariosArea.setEditable(false);
         infoEscenariosArea.setFont(fuenteBase);
         infoEscenariosArea.setBackground(grisClaro);
         infoEscenariosArea.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         infoEscenariosArea.setText("""
                 Datos de la Simulación:
-                    - Escenario A: 1000 visitas, $2000 por rifa
-                    - Escenario B: 2000 visitas, $1900 por rifa""");
+                    - Escenario A: 1000 visitas objetivo, $2000 por rifa
+                    - Escenario B: 2000 visitas objetivo, $1900 por rifa
+                    - Cada persona puede comprar entre 1 y 4 rifas
+                    - Probabilidad de venta y cantidad depende del género
+                """);
 
         resultadoArea = new JTextArea();
         resultadoArea.setEditable(false);
@@ -184,14 +188,17 @@ public class RifasGUI extends JFrame {
                 (Promedios con %d simulaciones)
 
                 Escenario A:
-                    - Visitas: %.0f
+                    - Visitas realizadas: %.0f
                     - Rifas vendidas: %.0f
                     - Ganancia: $%.2f
 
                 Escenario B:
-                    - Visitas: %.0f
+                    - Visitas realizadas: %.0f
                     - Rifas vendidas: %.0f
                     - Ganancia: $%.2f
+
+                Diferencia de ganancia: $%.2f
+                Diferencia de rifas vendidas: %.2f
                 """,
                 repeticiones,
                 visitasATotal / (double) repeticiones,
@@ -199,11 +206,9 @@ public class RifasGUI extends JFrame {
                 gananciaAMedia,
                 visitasBTotal / (double) repeticiones,
                 rifasBMedia,
-                gananciaBMedia
-        );
-
-        double diferencia = Math.abs(gananciaAMedia - gananciaBMedia);
-        textoResultado += String.format("\n\nDiferencia de ganancia: $%.2f", diferencia);
+                gananciaBMedia,
+                Math.abs(gananciaAMedia - gananciaBMedia),
+                Math.abs(rifasAMedia - rifasBMedia));
 
         resultadoArea.setText(textoResultado);
         resultadoArea.setRows(textoResultado.split("\n").length);
@@ -213,24 +218,27 @@ public class RifasGUI extends JFrame {
                 : "Recomendación: No conviene el segundo equipo.");
 
         DefaultCategoryDataset dataset = new DefaultCategoryDataset();
-        dataset.addValue(gananciaAMedia, "Ganancia", "Escenario A");
-        dataset.addValue(gananciaBMedia, "Ganancia", "Escenario B");
+        dataset.addValue(gananciaAMedia, "Ganancia promedio", "Escenario A");
+        dataset.addValue(gananciaBMedia, "Ganancia promedio", "Escenario B");
+        dataset.addValue(rifasAMedia, "Rifas promedio", "Escenario A");
+        dataset.addValue(rifasBMedia, "Rifas promedio", "Escenario B");
 
         JFreeChart barChart = ChartFactory.createBarChart(
-                "Comparación de Ganancias Promedio",
+                "Comparación de Resultados Promedios",
                 "Escenario",
-                "Ganancia Promedio ($)",
+                "Valores",
                 dataset,
                 PlotOrientation.VERTICAL,
-                false, true, false
-        );
+                true, true, false);
 
         CategoryPlot plot = barChart.getCategoryPlot();
         plot.setRangeGridlinePaint(Color.GRAY);
         plot.setBackgroundPaint(Color.WHITE);
+        plot.setDatasetRenderingOrder(DatasetRenderingOrder.FORWARD);
 
         BarRenderer renderer = (BarRenderer) plot.getRenderer();
-        renderer.setSeriesPaint(0, new Color(100, 160, 255));
+        renderer.setSeriesPaint(0, new Color(100, 160, 255)); // Ganancia
+        renderer.setSeriesPaint(1, new Color(255, 140, 120)); // Rifas
 
         chartPanel.setChart(barChart);
     }

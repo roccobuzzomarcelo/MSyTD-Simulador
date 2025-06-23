@@ -12,7 +12,7 @@ public class Rifas {
     /**
      * Simula una campaña de venta de rifas.
      *
-     * @param visitasObjetivo Número de visitas objetivo para la campaña.
+     * @param visitasObjetivo Número de clientes objetivo (uno por hogar).
      * @param precioRifa      Precio de cada rifa.
      * @return Un objeto Simulacion con los resultados de la campaña.
      */
@@ -21,15 +21,24 @@ public class Rifas {
         int visitasRealizadas = 0;
         int rifasVendidas = 0;
 
-        while (visitasRealizadas < visitasObjetivo) {
-            boolean atendido = simularAtencion(random);
-            visitasRealizadas++;
+        for (int i = 0; i < visitasObjetivo; i++) {
+            boolean atendido = false;
 
-            if (!atendido) {
-                atendido = simularAtencion(random);
-                visitasRealizadas++;
+            // Primer intento
+            visitasRealizadas++;
+            if (simularAtencion(random)) {
+                atendido = true;
             }
 
+            // Segundo intento (otra semana) si no fue atendido
+            if (!atendido) {
+                visitasRealizadas++;
+                if (simularAtencion(random)) {
+                    atendido = true;
+                }
+            }
+
+            // Si fue atendido en alguno de los dos intentos
             if (atendido) {
                 boolean esHombre = random.nextDouble() < PROB_HOMBRE;
                 boolean seVende = random.nextDouble() < (esHombre ? PROB_VENTA_HOMBRE : PROB_VENTA_MUJER);
@@ -45,23 +54,10 @@ public class Rifas {
         return new Simulacion(visitasRealizadas, rifasVendidas, ganancia);
     }
 
-    /**
-     * Simula si un cliente es atendido o no.
-     *
-     * @param random Instancia de Random para generar números aleatorios.
-     * @return true si el cliente es atendido, false si no.
-     */
     private static boolean simularAtencion(Random random) {
         return random.nextDouble() >= PROB_NO_ATENDIDO;
     }
 
-    /**
-     * Simula la cantidad de rifas que un cliente comprará.
-     *
-     * @param random   Instancia de Random para generar números aleatorios.
-     * @param esHombre Indica si el cliente es hombre o mujer.
-     * @return Cantidad de rifas compradas.
-     */
     private static int simularCantidadRifas(Random random, boolean esHombre) {
         double[] prob = esHombre ? PROB_RIFAS_HOMBRE : PROB_RIFAS_MUJER;
         double r = random.nextDouble();
@@ -74,6 +70,6 @@ public class Rifas {
             }
         }
 
-        return 1; // por defecto
+        return 1;
     }
 }
