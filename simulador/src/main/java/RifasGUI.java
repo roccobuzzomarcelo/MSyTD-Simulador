@@ -42,12 +42,13 @@ public class RifasGUI extends JFrame {
     private final JTextField precioAField;
     private final JTextField visitasBField;
     private final JTextField precioBField;
+    private final JTextField repeticionesField;
 
     public RifasGUI() {
         FlatLightLaf.setup();
 
         setTitle("Simulación de Campaña de Rifas");
-        setSize(512, 812);
+        setSize(648, 1024);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setLayout(new BorderLayout(10, 10));
@@ -63,6 +64,7 @@ public class RifasGUI extends JFrame {
         precioAField = new JTextField("2000", 6);
         visitasBField = new JTextField("2000", 6);
         precioBField = new JTextField("1900", 6);
+        repeticionesField = new JTextField("0", 4);
 
         infoEscenariosArea = new JTextArea(3, 50);
         infoEscenariosArea.setEditable(false);
@@ -110,6 +112,12 @@ public class RifasGUI extends JFrame {
         JPanel topPanel = new JPanel(new BorderLayout(10, 10));
         topPanel.setBackground(grisClaro);
         topPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 0, 10));
+
+        JPanel inputsExtra = new JPanel();
+        inputsExtra.setBackground(grisClaro);
+        inputsExtra.add(new JLabel("Repeticiones:"));
+        inputsExtra.add(repeticionesField);
+        topPanel.add(inputsExtra, BorderLayout.NORTH);
         topPanel.add(infoEscenariosArea, BorderLayout.CENTER);
         topPanel.add(btnSimular, BorderLayout.SOUTH);
 
@@ -147,43 +155,75 @@ public class RifasGUI extends JFrame {
         int precioA = Integer.parseInt(precioAField.getText());
         int visitasB = Integer.parseInt(visitasBField.getText());
         int precioB = Integer.parseInt(precioBField.getText());
+        int repeticiones = Integer.parseInt(repeticionesField.getText());
 
-        Simulacion simA = Rifas.simularCampania(visitasA, precioA);
-        Simulacion simB = Rifas.simularCampania(visitasB, precioB);
+        double gananciaATotal = 0, gananciaBTotal = 0;
+        int rifasATotal = 0, rifasBTotal = 0;
+        int visitasATotal = 0, visitasBTotal = 0;
+
+        for (int i = 0; i < repeticiones; i++) {
+            Simulacion simA = Rifas.simularCampania(visitasA, precioA);
+            Simulacion simB = Rifas.simularCampania(visitasB, precioB);
+
+            gananciaATotal += simA.gananciaTotal;
+            rifasATotal += simA.rifas;
+            visitasATotal += simA.visitas;
+
+            gananciaBTotal += simB.gananciaTotal;
+            rifasBTotal += simB.rifas;
+            visitasBTotal += simB.visitas;
+        }
+
+        double gananciaAMedia = gananciaATotal / repeticiones;
+        double rifasAMedia = rifasATotal / (double) repeticiones;
+
+        double gananciaBMedia = gananciaBTotal / repeticiones;
+        double rifasBMedia = rifasBTotal / (double) repeticiones;
 
         String textoResultado = String.format("""
+                (Promedios con %d simulaciones)
+
                 Escenario A:
-                    - Visitas: %d
-                    - Rifas vendidas: %d
+                    - Visitas: %.0f
+                    - Rifas vendidas: %.0f
                     - Ganancia: $%.2f
 
                 Escenario B:
-                    - Visitas: %d
-                    - Rifas vendidas: %d
-                    - Ganancia: $%.2f""",
-                simA.visitas, simA.rifas, simA.gananciaTotal,
-                simB.visitas, simB.rifas, simB.gananciaTotal);
+                    - Visitas: %.0f
+                    - Rifas vendidas: %.0f
+                    - Ganancia: $%.2f
+                """,
+                repeticiones,
+                visitasATotal / (double) repeticiones,
+                rifasAMedia,
+                gananciaAMedia,
+                visitasBTotal / (double) repeticiones,
+                rifasBMedia,
+                gananciaBMedia
+        );
 
-        double diferencia = Math.abs(simA.gananciaTotal - simB.gananciaTotal);
+        double diferencia = Math.abs(gananciaAMedia - gananciaBMedia);
         textoResultado += String.format("\n\nDiferencia de ganancia: $%.2f", diferencia);
 
         resultadoArea.setText(textoResultado);
         resultadoArea.setRows(textoResultado.split("\n").length);
-        recomendacionLabel.setText(simB.gananciaTotal > simA.gananciaTotal
+
+        recomendacionLabel.setText(gananciaBMedia > gananciaAMedia
                 ? "Recomendación: Conviene el segundo equipo."
                 : "Recomendación: No conviene el segundo equipo.");
 
         DefaultCategoryDataset dataset = new DefaultCategoryDataset();
-        dataset.addValue(simA.gananciaTotal, "Ganancia", "Escenario A");
-        dataset.addValue(simB.gananciaTotal, "Ganancia", "Escenario B");
+        dataset.addValue(gananciaAMedia, "Ganancia", "Escenario A");
+        dataset.addValue(gananciaBMedia, "Ganancia", "Escenario B");
 
         JFreeChart barChart = ChartFactory.createBarChart(
-                "Comparación de Ganancias",
+                "Comparación de Ganancias Promedio",
                 "Escenario",
-                "Ganancia ($)",
+                "Ganancia Promedio ($)",
                 dataset,
                 PlotOrientation.VERTICAL,
-                false, true, false);
+                false, true, false
+        );
 
         CategoryPlot plot = barChart.getCategoryPlot();
         plot.setRangeGridlinePaint(Color.GRAY);
@@ -198,7 +238,7 @@ public class RifasGUI extends JFrame {
     private void exportarGrafico() {
         try {
             ChartUtils.saveChartAsPNG(new File("grafico.png"), chartPanel.getChart(), 600, 400);
-            JOptionPane.showMessageDialog(this, "Gráfico exportado como 'ganancias.png'");
+            JOptionPane.showMessageDialog(this, "Gráfico exportado como 'grafico.png'");
         } catch (IOException ex) {
             JOptionPane.showMessageDialog(this, "Error al exportar gráfico");
         }
