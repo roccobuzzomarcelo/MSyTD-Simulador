@@ -198,7 +198,7 @@ public class RifasGUI extends JFrame {
                     - Ganancia: $%.2f
 
                 Diferencia de ganancia: $%.2f
-                Diferencia de rifas vendidas: %.2f
+                Diferencia de rifas vendidas: %.0f
                 """,
                 repeticiones,
                 visitasATotal / (double) repeticiones,
